@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị Kênh GT | Lalia Việt Nam</title>
+    <!-- Tailwind CSS (Giao diện) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome (Icon) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: #f0f2f5; color: #1e293b; }
+        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); }
+        .gradient-text { background: linear-gradient(to right, #2563eb, #14b8a6); -webkit-background-clip: text; color: transparent; }
+        .loader { border: 4px solid #e2e8f0; border-top: 4px solid #2563eb; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        /* Scrollbar custom cho bảng */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- ================= 1. MÀN HÌNH ĐĂNG NHẬP (BẢO MẬT) ================= -->
+    <div id="loginScreen" class="fixed inset-0 bg-slate-900 flex items-center justify-center z-50 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
+        <div class="bg-white p-10 rounded-2xl shadow-2xl w-full max-w-md text-center">
+            <div class="mb-8">
+                <div class="w-20 h-20 bg-gradient-to-tr from-blue-600 to-cyan-500 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg transform rotate-3">
+                    <i class="fa-solid fa-chart-pie text-3xl text-white transform -rotate-3"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-800">Lalia Việt Nam</h2>
+                <p class="text-sm text-slate-500 mt-2 font-medium">Hệ Thống Phân Tích Đi Tuyến GT</p>
+            </div>
+            <div class="relative mb-6">
+                <i class="fa-solid fa-lock absolute left-4 top-1/2 transform -translate-y-1/2 text-slate-400"></i>
+                <input type="password" id="passcodeInput" placeholder="Nhập mã an toàn..." 
+                       class="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-center tracking-[0.2em] font-bold text-slate-700 transition-all">
+            </div>
+            <button onclick="checkPassword()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-bold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg flex justify-center items-center gap-2">
+                <i class="fa-solid fa-right-to-bracket"></i> ĐĂNG NHẬP HỆ THỐNG
+            </button>
+            <p id="loginError" class="text-red-500 text-sm mt-4 font-medium hidden bg-red-50 py-2 rounded-lg"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Mã an toàn không chính xác hoặc API lỗi!</p>
+        </div>
+    </div>
+
+    <!-- ================= 2. GIAO DIỆN DASHBOARD CHÍNH ================= -->
+    <div id="mainDashboard" class="hidden flex-col h-screen overflow-hidden">
+        
+        <!-- Header Sang Trọng -->
+        <header class="bg-white shadow-sm border-b border-slate-200 px-6 py-4 flex justify-between items-center z-10">
+            <div class="flex items-center gap-4">
+                <div class="bg-blue-600 text-white p-2 rounded-lg"><i class="fa-solid fa-layer-group"></i></div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800">Dashboard Kênh GT</h1>
+                    <p class="text-xs text-slate-500 font-medium">Báo cáo cập nhật theo thời gian thực</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-sm font-medium bg-green-50 text-green-700 px-4 py-2 rounded-full border border-green-200">
+                    <i class="fa-solid fa-shield-check mr-1"></i> Kết nối an toàn
+                </div>
+                <button onclick="location.reload()" class="text-slate-400 hover:text-slate-700 transition-colors"><i class="fa-solid fa-arrow-right-from-bracket text-xl"></i></button>
+            </div>
+        </header>
+
+        <main class="flex-grow p-6 w-full max-w-screen-2xl mx-auto overflow-y-auto">
+            
+            <!-- Bộ Lọc Đa Chiều -->
+            <div class="glass-panel rounded-2xl shadow-sm p-6 mb-6 flex flex-wrap gap-5 items-end">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">👤 Nhân viên Sales</label>
+                    <select id="filterEmp" class="w-full border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 p-2.5 transition-all outline-none border">
+                        <option value="ALL">-- Tất cả nhân sự --</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">📅 Chọn nhanh</label>
+                    <select id="filterMonth" onchange="setMonthRange()" class="w-full border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 p-2.5 transition-all outline-none border">
+                        <option value="custom">Tùy chỉnh ngày</option>
+                        <option value="thisMonth">Tháng này</option>
+                        <option value="lastMonth">Tháng trước</option>
+                    </select>
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Từ ngày</label>
+                    <input type="date" id="filterStartDate" class="w-full border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 p-2.5 outline-none border">
+                </div>
+                <div class="flex-1 min-w-[150px]">
+                    <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Đến ngày</label>
+                    <input type="date" id="filterEndDate" class="w-full border-slate-200 rounded-xl bg-slate-50 focus:bg-white focus:border-blue-500 p-2.5 outline-none border">
+                </div>
+                <button onclick="applyFilters()" class="bg-slate-800 hover:bg-slate-900 text-white px-8 py-2.5 rounded-xl font-bold shadow-md transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-filter"></i> LỌC
+                </button>
+            </div>
+
+            <!-- Loading UI -->
+            <div id="loading" class="text-center py-20 hidden">
+                <div class="loader mb-4"></div>
+                <p class="text-slate-500 font-medium">Đang giải mã và lấy dữ liệu từ hệ thống...</p>
+            </div>
+
+            <!-- Dashboard Content -->
+            <div id="dashboardContent" class="hidden">
+                
+                <!-- Bảng KPIs -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-blue-50 rounded-bl-full -z-10 group-hover:bg-blue-100 transition-colors"></div>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Tổng lượt Check-in</span>
+                        <div class="mt-2 flex items-baseline gap-2">
+                            <span id="kpiTotalVisits" class="text-4xl font-extrabold text-slate-800">0</span>
+                            <span class="text-sm font-medium text-slate-400">lượt</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-emerald-50 rounded-bl-full -z-10 group-hover:bg-emerald-100 transition-colors"></div>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Khách hàng viếng thăm</span>
+                        <div class="mt-2 flex items-baseline gap-2">
+                            <span id="kpiUniqueCustomers" class="text-4xl font-extrabold text-emerald-600">0</span>
+                            <span class="text-sm font-medium text-slate-400">điểm bán</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-orange-50 rounded-bl-full -z-10 group-hover:bg-orange-100 transition-colors"></div>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Tần suất trung bình</span>
+                        <div class="mt-2 flex items-baseline gap-2">
+                            <span id="kpiFrequency" class="text-4xl font-extrabold text-orange-500">0</span>
+                            <span class="text-sm font-medium text-slate-400">lượt / khách</span>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 w-16 h-16 bg-purple-50 rounded-bl-full -z-10 group-hover:bg-purple-100 transition-colors"></div>
+                        <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Đối thủ ghi nhận</span>
+                        <div class="mt-2">
+                            <span id="kpiCompetitors" class="text-lg font-bold text-purple-700 leading-tight block truncate">...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bảng Dữ Liệu Chi Tiết (Có tính năng phân tích ngày chưa đến) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50/80 px-6 py-5 border-b border-slate-200 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-800 text-lg"><i class="fa-solid fa-list-check text-blue-600 mr-2"></i>Báo Cáo Chi Tiết Theo Khách Hàng</h3>
+                        <span class="text-xs font-medium bg-slate-200 text-slate-600 px-3 py-1 rounded-full" id="tableStatus">Đang hiển thị...</span>
+                    </div>
+                    <div class="max-h-[600px] overflow-y-auto">
+                        <table class="w-full text-left border-collapse whitespace-nowrap">
+                            <thead class="sticky top-0 bg-slate-100/90 backdrop-blur-sm shadow-sm z-10">
+                                <tr class="text-slate-500 text-xs uppercase tracking-wider">
+                                    <th class="p-4 font-bold border-b">Tên Khách Hàng</th>
+                                    <th class="p-4 font-bold border-b text-center">Tổng lượt</th>
+                                    <th class="p-4 font-bold border-b min-w-[200px]">✅ Các ngày ĐÃ ĐẾN</th>
+                                    <th class="p-4 font-bold border-b min-w-[200px] bg-red-50/50">❌ Các ngày CHƯA ĐẾN (Trong kỳ lọc)</th>
+                                    <th class="p-4 font-bold border-b">Đối thủ tại điểm</th>
+                                    <th class="p-4 font-bold border-b">Tình trạng/Độ phủ nhà mình</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody" class="text-sm divide-y divide-slate-100">
+                                <!-- JS Dữ liệu -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- ================= 3. SCRIPT XỬ LÝ DỮ LIỆU & LOGIC ================= -->
+    <script>
+        // ---------------------------------------------------------
+        // ⚠️ BẠN HÃY THAY LINK API ĐỘC LẬP CỦA BẠN VÀO DÒNG DƯỚI ĐÂY
+        // ---------------------------------------------------------
+        const API_URL = "https://script.google.com/macros/s/AKfycbzmwSKJXZepmkzSgAaczapXHFFU9PIu-vKrjd9ilTUeRAK_dcmU8W_w95pH-fXk5sI/exec"; 
+
+        let rawData = []; 
+
+        // Xử lý nút Enter khi nhập pass
+        document.getElementById('passcodeInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') checkPassword();
+        });
+
+        // 1. Hàm Đăng Nhập & Gọi API (Đính kèm passcode)
+        async function checkPassword() {
+            const passcode = document.getElementById('passcodeInput').value;
+            if(!passcode) return;
+
+            document.getElementById('passcodeInput').disabled = true;
+            document.querySelector('#loginScreen button').innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang kết nối...';
+            
+            try {
+                const response = await fetch(API_URL + "?passcode=" + encodeURIComponent(passcode));
+                const json = await response.json();
+                
+                if (json.status === "success") {
+                    rawData = json.data;
+                    document.getElementById('loginScreen').classList.add('hidden');
+                    document.getElementById('mainDashboard').classList.remove('hidden');
+                    
+                    // Mặc định set bộ lọc là "Tháng này" khi mới vào
+                    document.getElementById('filterMonth').value = 'thisMonth';
+                    setMonthRange();
+                    initFilters(rawData);
+                    applyFilters(); 
+                } else {
+                    throw new Error(json.message);
+                }
+            } catch (error) {
+                document.getElementById('loginError').innerText = "Lỗi: " + (error.message || "Không thể lấy dữ liệu từ Google Sheets");
+                document.getElementById('loginError').classList.remove('hidden');
+            } finally {
+                document.getElementById('passcodeInput').disabled = false;
+                document.querySelector('#loginScreen button').innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> ĐĂNG NHẬP HỆ THỐNG';
+            }
+        }
+
+        // 2. Nạp danh sách nhân viên tự động
+        function initFilters(data) {
+            const empSet = new Set();
+            data.forEach(row => {
+                let name = row["Tên nhân viên"] || row["Nhân viên"] || row["Mã NV"] || "";
+                if (name) empSet.add(name);
+            });
+
+            const empSelect = document.getElementById('filterEmp');
+            Array.from(empSet).sort().forEach(emp => {
+                let option = document.createElement('option');
+                option.value = option.textContent = emp;
+                empSelect.appendChild(option);
+            });
+        }
+
+        // 3. Logic chọn tháng nhanh
+        function setMonthRange() {
+            const val = document.getElementById('filterMonth').value;
+            const startInput = document.getElementById('filterStartDate');
+            const endInput = document.getElementById('filterEndDate');
+            
+            let today = new Date();
+            let y = today.getFullYear();
+            let m = today.getMonth(); // 0-11
+            
+            if (val === 'thisMonth') {
+                startInput.value = formatDateInput(new Date(y, m, 1));
+                endInput.value = formatDateInput(new Date(y, m + 1, 0));
+            } else if (val === 'lastMonth') {
+                startInput.value = formatDateInput(new Date(y, m - 1, 1));
+                endInput.value = formatDateInput(new Date(y, m, 0));
+            } else {
+                startInput.value = "";
+                endInput.value = "";
+            }
+        }
+
+        function formatDateInput(date) {
+            let d = date.getDate().toString().padStart(2, '0');
+            let m = (date.getMonth() + 1).toString().padStart(2, '0');
+            let y = date.getFullYear();
+            return `${y}-${m}-${d}`;
+        }
+
+        // Chuyển chuỗi ngày từ Sheet thành Object Date
+        function parseDate(dateStr) {
+            if (!dateStr) return null;
+            if (dateStr.includes("T")) return new Date(dateStr); 
+            let parts = dateStr.toString().split(/[-/ ]/);
+            if (parts.length >= 3) {
+                // Xử lý format VN DD/MM/YYYY
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return new Date(dateStr);
+        }
+
+        // 4. Lọc Dữ Liệu Chính
+        function applyFilters() {
+            const empFilter = document.getElementById('filterEmp').value;
+            const startStr = document.getElementById('filterStartDate').value;
+            const endStr = document.getElementById('filterEndDate').value;
+
+            const startDate = startStr ? new Date(startStr) : null;
+            const endDate = endStr ? new Date(endStr) : null;
+
+            if (startDate) startDate.setHours(0,0,0,0);
+            if (endDate) endDate.setHours(23,59,59,999);
+
+            let filtered = rawData.filter(row => {
+                let empName = row["Tên nhân viên"] || row["Nhân viên"] || row["Mã NV"] || "";
+                let matchEmp = (empFilter === "ALL") || (empName === empFilter);
+
+                let matchDate = true;
+                let rowDate = parseDate(row["Ngày"] || row["Thời gian"]);
+                
+                if (rowDate && startDate && rowDate < startDate) matchDate = false;
+                if (rowDate && endDate && rowDate > endDate) matchDate = false;
+
+                return matchEmp && matchDate;
+            });
+
+            renderDashboard(filtered, startDate, endDate);
+        }
+
+        // 5. Hiển thị Dashboard & Tính toán Ngày Không Viếng Thăm
+        function renderDashboard(data, startDate, endDate) {
+            let totalVisits = data.length;
+            let customers = {}; 
+            let allCompetitors = new Set();
+
+            // Tính mảng tất cả các ngày trong kỳ lọc (Để tìm ngày vắng mặt)
+            let allDatesInRange = [];
+            if (startDate && endDate) {
+                for(let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+                    allDatesInRange.push(d.toLocaleDateString('vi-VN'));
+                }
+            }
+
+            data.forEach(row => {
+                let khName = row["Tên khách hàng"] || row["Khách hàng"] || row["Mã KH"] || "Khách Vãng Lai";
+                let dateVal = parseDate(row["Ngày"] || row["Thời gian"]);
+                let dateStr = dateVal ? dateVal.toLocaleDateString('vi-VN') : "-";
+                let comp = row["Đối thủ"] || row["Đối thủ cạnh tranh"] || "";
+                let cov = row["Tỷ lệ phủ"] || row["Tình trạng hàng hóa"] || "";
+
+                if (comp && comp.trim() !== "") comp.split(",").forEach(c => allCompetitors.add(c.trim()));
+
+                if (!customers[khName]) {
+                    customers[khName] = { visits: 0, dates: new Set(), comps: new Set(), covers: new Set() };
+                }
+
+                customers[khName].visits += 1;
+                if (dateStr !== "-") customers[khName].dates.add(dateStr);
+                if (comp) customers[khName].comps.add(comp);
+                if (cov) customers[khName].covers.add(cov);
+            });
+
+            let uniqueKhCount = Object.keys(customers).length;
+            let avgFreq = uniqueKhCount > 0 ? (totalVisits / uniqueKhCount).toFixed(1) : 0;
+
+            // Render Thẻ KPI
+            document.getElementById('kpiTotalVisits').innerText = totalVisits;
+            document.getElementById('kpiUniqueCustomers').innerText = uniqueKhCount;
+            document.getElementById('kpiCompetitors').innerText = Array.from(allCompetitors).join(", ") || "Không có";
+            document.getElementById('kpiFrequency').innerText = avgFreq;
+            document.getElementById('tableStatus').innerText = `Lọc được ${uniqueKhCount} điểm bán`;
+
+            // Render Bảng
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = "";
+
+            if (uniqueKhCount === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-10 text-center text-slate-500 font-medium">Khoảng thời gian này nhân viên không phát sinh lượt check-in nào.</td></tr>`;
+                return;
+            }
+
+            for (let kh in customers) {
+                let dt = customers[kh];
+                let visitedArr = Array.from(dt.dates);
+                
+                // Thuật toán tìm ngày CHƯA ĐẾN
+                let notVisitedArr = [];
+                if (allDatesInRange.length > 0) {
+                    notVisitedArr = allDatesInRange.filter(d => !visitedArr.includes(d));
+                }
+
+                // UI Tags cho Ngày Đã Đến
+                let visitedHtml = visitedArr.map(d => `<span class="inline-block bg-blue-100 text-blue-700 px-2.5 py-1 rounded-md text-xs font-semibold mr-1 mb-1 border border-blue-200"><i class="fa-regular fa-calendar-check mr-1"></i>${d}</span>`).join("");
+                
+                // UI Tags cho Ngày Chưa Đến
+                let notVisitedHtml = "-";
+                if(startDate && endDate) {
+                    if (notVisitedArr.length === 0) {
+                        notVisitedHtml = `<span class="text-emerald-600 text-xs font-bold"><i class="fa-solid fa-check-double mr-1"></i>Đã đi full ngày</span>`;
+                    } else if (notVisitedArr.length > 5) {
+                        // Nếu nhiều quá thì gộp lại
+                        notVisitedHtml = `<span class="text-red-500 text-xs font-bold"><i class="fa-solid fa-triangle-exclamation mr-1"></i>Bỏ sót ${notVisitedArr.length} ngày</span>`;
+                    } else {
+                        notVisitedHtml = notVisitedArr.map(d => `<span class="inline-block bg-red-50 text-red-600 px-2.5 py-1 rounded-md text-xs font-medium mr-1 mb-1 border border-red-100">${d}</span>`).join("");
+                    }
+                } else {
+                    notVisitedHtml = `<span class="text-slate-400 text-xs italic">Vui lòng chọn Từ ngày - Đến ngày</span>`;
+                }
+
+                let compTags = Array.from(dt.comps).join(", ");
+                let covTags = Array.from(dt.covers).join(" | ");
+
+                let tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50/50 transition-colors cursor-pointer group";
+                tr.innerHTML = `
+                    <td class="p-4 font-bold text-slate-800">${kh}</td>
+                    <td class="p-4 text-center"><span class="bg-slate-800 text-white px-3 py-1 rounded-lg text-xs font-bold shadow-sm">${dt.visits}</span></td>
+                    <td class="p-4 whitespace-normal">${visitedHtml}</td>
+                    <td class="p-4 whitespace-normal bg-red-50/20 group-hover:bg-red-50/50 transition-colors">${notVisitedHtml}</td>
+                    <td class="p-4 text-orange-600 font-semibold text-sm whitespace-normal">${compTags || "-"}</td>
+                    <td class="p-4 text-emerald-700 font-medium text-sm whitespace-normal">${covTags || "-"}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+    </script>
+</body>
+</html>
